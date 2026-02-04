@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Card Flip Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2f8ecd 0%, #3140e8 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            color: white;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-label {
+            font-weight: 600;
+            opacity: 0.9;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 8px;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-reset {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-reset:active {
+            transform: translateY(0);
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            perspective: 1000px;
+            margin-bottom: 20px;
+        }
+
+        /* Respon: 2 cột trên mobile */
+        @media (max-width: 600px) {
+            .game-board {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .game-info {
+                gap: 20px;
+                font-size: 1rem;
+            }
+
+            .stat-value {
+                font-size: 1.5rem;
+                min-width: 60px;
+                padding: 8px 15px;
+            }
+
+            button {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+        }
+
+        .card {
+            aspect-ratio: 1;
+            cursor: pointer;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            height: 120px;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card.matched {
+            cursor: default;
+            opacity: 0.7;
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            font-size: 3rem;
+            font-weight: bold;
+            backface-visibility: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, #64a7f4 0%, #3b3be4 100%);
+            border: 3px solid white;
+            color: white;
+        }
+
+        .card-back::before {
+            content: '?';
+            font-size: 3rem;
+            font-weight: bold;
+        }
+
+        .card:hover .card-back {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border: 3px solid white;
+            color: white;
+            transform: rotateY(180deg);
+        }
+
+        .card.matched .card-front {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 40px 60px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: none;
+            min-width: 300px;
+        }
+
+        .message.show {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        .message h2 {
+            color: #667eea;
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+
+        .message p {
+            color: #764ba2;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+
+        .message button {
+            background: #667eea;
+            color: white;
+        }
+
+        .message button:hover {
+            background: #764ba2;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none;
+        }
+
+        .overlay.show {
+            display: block;
+        }
+
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 Memory Card Game</h1>
+        </header>
+
+        <div class="game-info">
+            <div class="stat">
+                <div class="stat-label">Số Lượt</div>
+                <div class="stat-value" id="moves">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Thẻ Khớp</div>
+                <div class="stat-value" id="matched">0/4</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn-reset" onclick="resetGame()">🔄 Chơi Lại</button>
+        </div>
+
+        <main>
+            <section class="game-board" id="gameBoard"></section>
+        </main>
+
+        <footer>
+            <p>Chọn 2 vi tri giống nhau</p>
+        </footer>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="message" id="winMessage">
+        <h2>🎉 Bạn Đã Chiến Thắng!</h2>
+        <p id="finalMoves"></p>
+        <button onclick="resetGame()">Chơi Lại</button>
+    </div>
+
+    <script>
+        // Card data
+        const cardSymbols = ['🍎', '🍎', '🍊', '🍊', '🍓', '🍓', '🍌', '🍌'];
+
+        let cards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let moves = 0;
+        let isChecking = false;
+
+        // Initialize 
+        function initGame() {
+            cards = shuffleArray([...cardSymbols]);
+            createCards();
+        }
+
+        // Shuffle array using Fisher-Yates algorithm
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        // Create card elements
+        function createCards() {
+            const gameBoard = document.getElementById('gameBoard');
+            gameBoard.innerHTML = '';
+
+            cards.forEach((symbol, index) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.index = index;
+                card.dataset.symbol = symbol;
+                card.innerHTML = `
+                    <div class="card-face card-back"></div>
+                    <div class="card-face card-front">${symbol}</div>
+                `;
+                card.addEventListener('click', flipCard);
+                gameBoard.appendChild(card);
+            });
+        }
+
+        // Flip card on click
+        function flipCard(e) {
+            const card = e.currentTarget;
+
+            if (card.classList.contains('flipped') ||
+                card.classList.contains('matched') ||
+                isChecking ||
+                flippedCards.length >= 2) {
+                return;
+            }
+
+            card.classList.add('flipped');
+            flippedCards.push(card);
+
+            if (flippedCards.length === 2) {
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            isChecking = true;
+            moves++;
+            updateStats();
+
+            const [card1, card2] = flippedCards;
+            const isMatch = card1.dataset.symbol === card2.dataset.symbol;
+
+            if (isMatch) {
+                card1.classList.add('matched');
+                card2.classList.add('matched');
+                matchedPairs++;
+                updateStats();
+                flippedCards = [];
+                isChecking = false;
+
+                if (matchedPairs === 4) {
+                    showWinMessage();
+                }
+            } else {
+                setTimeout(() => {
+                    card1.classList.remove('flipped');
+                    card2.classList.remove('flipped');
+                    flippedCards = [];
+                    isChecking = false;
+                }, 1000);
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('moves').textContent = moves;
+            document.getElementById('matched').textContent = `${matchedPairs}/4`;
+        }
+
+        // hien thi win message
+        function showWinMessage() {
+            document.getElementById('finalMoves').textContent = `Bạn hoàn thành trò chơi trong ${moves} lượt!`;
+            document.getElementById('overlay').classList.add('show');
+            document.getElementById('winMessage').classList.add('show');
+        }
+
+        // Reset game
+        function resetGame() {
+            cards = [];
+            flippedCards = [];
+            matchedPairs = 0;
+            moves = 0;
+            isChecking = false;
+
+            document.getElementById('overlay').classList.remove('show');
+            document.getElementById('winMessage').classList.remove('show');
+
+            updateStats();
+            initGame();
+        }
+
+        // Start game
+        window.addEventListener('DOMContentLoaded', initGame);
+    </script>
+</body>
+
+</html>
